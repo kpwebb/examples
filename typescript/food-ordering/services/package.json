@@ -15,9 +15,9 @@
     "build": "tsc --noEmitOnError",
     "app": "RESTATE_DEBUG_LOGGING=JOURNAL node ./dist/app.js",
     "dev": "RESTATE_DEBUG_LOGGING=JOURNAL ts-node-dev --respawn --transpile-only ./src/app.ts",
-    "prebundle": "rm -rf ../dist",
+    "prebundle": "rm -rf ./dist",
     "bundle": "esbuild src/app.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=dist/index.js",
-    "postbundle": "cd ../dist && zip -r index.zip index.js*"
+    "postbundle": "cd ./dist && zip -r index.zip index.js*"
   },
   "dependencies": {
     "@restatedev/restate-sdk": "^0.2.0",

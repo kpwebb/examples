@@ -13,7 +13,15 @@ import * as restate from "@restatedev/restate-sdk";
 
 import { orderApi, orderService } from "./order_service";
 
-restate
-  .createServer()
-  .bindKeyedRouter(orderApi.path, orderService)
-  .listen(8080);
+export let handler;
+if (process.env.LAMBDA == "true") {
+  handler = restate
+    .createLambdaApiGatewayHandler()
+    .bindKeyedRouter(orderApi.path, orderService)
+    .handle();
+} else {
+  restate
+    .createServer()
+    .bindKeyedRouter(orderApi.path, orderService)
+    .listen(8080);
+}
