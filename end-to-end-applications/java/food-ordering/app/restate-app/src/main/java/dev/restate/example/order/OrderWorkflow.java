@@ -9,18 +9,21 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples;
+package dev.restate.example.order;
 
+import dev.restate.example.delivery.DeliveryManagerClient;
+import dev.restate.example.delivery.OrderStatusServiceClient;
+import dev.restate.example.order.clients.PaymentClient;
+import dev.restate.example.order.clients.RestaurantClient;
+import dev.restate.example.types.DeliveryRequest;
+import dev.restate.example.types.OrderRequest;
+import dev.restate.example.types.StatusEnum;
 import dev.restate.sdk.ObjectContext;
 import dev.restate.sdk.annotation.Handler;
 import dev.restate.sdk.annotation.VirtualObject;
 import dev.restate.sdk.common.CoreSerdes;
 import dev.restate.sdk.common.TerminalException;
-import dev.restate.sdk.examples.clients.PaymentClient;
-import dev.restate.sdk.examples.clients.RestaurantClient;
-import dev.restate.sdk.examples.types.DeliveryRequest;
-import dev.restate.sdk.examples.types.OrderRequest;
-import dev.restate.sdk.examples.types.StatusEnum;
+
 import java.time.Duration;
 
 /**
@@ -32,6 +35,7 @@ import java.time.Duration;
 public class OrderWorkflow {
   private final RestaurantClient restaurant = RestaurantClient.get();
   private final PaymentClient paymentClnt = PaymentClient.get();
+
 
   @Handler
   public void create(ObjectContext ctx, OrderRequest order) throws TerminalException {
@@ -66,7 +70,6 @@ public class OrderWorkflow {
 
     // 5. Find a driver and start delivery
     var deliveryAwakeable = ctx.awakeable(CoreSerdes.VOID);
-
     DeliveryManagerClient.fromContext(ctx, id)
         .send()
         .start(new DeliveryRequest(order.getRestaurantId(), deliveryAwakeable.id()));

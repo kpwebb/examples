@@ -10,7 +10,7 @@ repositories {
     mavenCentral()
 }
 
-val restateVersion = "0.9.0"
+val restateVersion = "0.9.2"
 
 dependencies {
     // Kafka
@@ -30,11 +30,11 @@ dependencies {
 
 // Set main class
 application {
-    mainClass.set("dev.restate.sdk.examples.RestaurantMain")
+    mainClass.set("dev.restate.example.RestaurantMain")
 }
 
 
 jib {
     to.image = "restaurant-app:0.0.1"
-    container.mainClass  = "dev.restate.sdk.examples.RestaurantMain"
+    container.mainClass  = "dev.restate.example.RestaurantMain"
 }

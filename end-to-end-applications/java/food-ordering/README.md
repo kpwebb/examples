@@ -37,7 +37,7 @@ cd app
 
 Launch the Docker compose setup:
 ```shell
-docker compose up
+docker compose -f docker-compose-all.yaml up
 ```
 
 WebUI is running at http://localhost:3000

@@ -9,37 +9,36 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples.types;
+package dev.restate.example.types;
 
-public class DeliveryInformation {
+public class AssignedDelivery {
+
+  private final String driverId;
   private final String orderId;
-  private final String callbackId;
   private final String restaurantId;
   private final Location restaurantLocation;
   private final Location customerLocation;
-  private boolean orderPickedUp;
+  private boolean orderPickedUp = false;
 
-  public DeliveryInformation(
+  public AssignedDelivery(
+      String driverId,
       String orderId,
-      String callbackId,
       String restaurantId,
       Location restaurantLocation,
-      Location customerLocation,
-      boolean orderPickedUp) {
+      Location customerLocation) {
+    this.driverId = driverId;
     this.orderId = orderId;
-    this.callbackId = callbackId;
     this.restaurantId = restaurantId;
     this.restaurantLocation = restaurantLocation;
     this.customerLocation = customerLocation;
-    this.orderPickedUp = orderPickedUp;
+  }
+
+  public String getDriverId() {
+    return driverId;
   }
 
   public String getOrderId() {
     return orderId;
-  }
-
-  public String getCallbackId() {
-    return callbackId;
   }
 
   public String getRestaurantId() {
@@ -59,6 +58,6 @@ public class DeliveryInformation {
   }
 
   public void notifyPickup() {
-    this.orderPickedUp = true;
+    orderPickedUp = true;
   }
 }

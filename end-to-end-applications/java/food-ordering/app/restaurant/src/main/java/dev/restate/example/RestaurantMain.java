@@ -1,4 +1,4 @@
-package dev.restate.sdk.examples;
+package dev.restate.example;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +31,7 @@ public class RestaurantMain {
     server.setExecutor(null);
     server.start();
     logger.info("Restaurant POS server is listening on port 5050...");
+    logger.info("RESTATE_RUNTIME_ENDPOINT: " + RESTATE_RUNTIME_ENDPOINT);
   }
 
   /** Preparation request handler. */
@@ -39,6 +40,7 @@ public class RestaurantMain {
 
     @Override
     public void handle(HttpExchange t) throws IOException {
+      logger.info("Order received");
       ObjectMapper mapper = new ObjectMapper();
       JsonNode node = mapper.readTree(t.getRequestBody());
 

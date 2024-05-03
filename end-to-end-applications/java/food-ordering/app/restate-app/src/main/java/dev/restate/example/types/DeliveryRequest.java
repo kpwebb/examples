@@ -1,4 +1,4 @@
-package dev.restate.sdk.examples.types;
+package dev.restate.example.types;
 
 public class DeliveryRequest {
 

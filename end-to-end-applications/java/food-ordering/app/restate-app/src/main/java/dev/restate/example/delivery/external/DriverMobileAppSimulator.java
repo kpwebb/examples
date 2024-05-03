@@ -9,18 +9,18 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples.external;
+package dev.restate.example.delivery.external;
 
+import dev.restate.example.delivery.DriverDigitalTwinClient;
+import dev.restate.example.delivery.clients.KafkaPublisher;
+import dev.restate.example.delivery.utils.GeoUtils;
+import dev.restate.example.types.AssignedDelivery;
+import dev.restate.example.types.Location;
 import dev.restate.sdk.ObjectContext;
 import dev.restate.sdk.annotation.Handler;
 import dev.restate.sdk.annotation.VirtualObject;
 import dev.restate.sdk.common.StateKey;
 import dev.restate.sdk.common.TerminalException;
-import dev.restate.sdk.examples.DriverDigitalTwinClient;
-import dev.restate.sdk.examples.clients.KafkaPublisher;
-import dev.restate.sdk.examples.types.AssignedDelivery;
-import dev.restate.sdk.examples.types.Location;
-import dev.restate.sdk.examples.utils.GeoUtils;
 import dev.restate.sdk.serde.jackson.JacksonSerdes;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;

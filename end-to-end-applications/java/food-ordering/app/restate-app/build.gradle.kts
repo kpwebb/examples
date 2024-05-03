@@ -11,7 +11,7 @@ repositories {
     mavenCentral()
 }
 
-val restateVersion = "0.9.0"
+val restateVersion = "0.9.2"
 
 dependencies {
     // Restate SDK
@@ -36,12 +36,17 @@ dependencies {
 
 // Set main class
 application {
-    mainClass.set("dev.restate.sdk.examples.AppMain")
+    if (project.hasProperty("delivery")) {
+        mainClass.set("dev.restate.example.delivery.AppMain")
+    } else {
+        mainClass.set("dev.restate.example.order.AppMain")
+    }
 }
+
 
 jib {
     to.image = "restate-app:0.0.1"
-    container.mainClass  = "dev.restate.sdk.examples.AppMain"
+    container.mainClass  = "dev.restate.example.order.AppMain"
 }
 
 tasks.withType<JavaCompile> {

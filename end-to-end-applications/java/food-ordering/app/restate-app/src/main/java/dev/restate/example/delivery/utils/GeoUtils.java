@@ -9,9 +9,9 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples.utils;
+package dev.restate.example.delivery.utils;
 
-import dev.restate.sdk.examples.types.Location;
+import dev.restate.example.types.Location;
 
 public class GeoUtils {
   public static final String DEMO_REGION = "San Jose (CA)";

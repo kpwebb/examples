@@ -66,12 +66,10 @@ services:
     container_name: restaurantpos
     image: restaurant-app:0.0.1
     environment:
-      - RESTATE_RUNTIME_ENDPOINT=http://host.docker.internal:9090
+      - RESTATE_RUNTIME_ENDPOINT=http://runtime:8080
     ports:
       - "5050:5050"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.example.RestaurantMain"]
+    entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.sdk.examples.RestaurantMain"]
 
   restate_app:
     container_name: restate_app
@@ -79,12 +77,54 @@ services:
     environment:
       - RESTAURANT_ENDPOINT=http://restaurantpos:5050
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
-    ports:
-      - "9081:9081"
     entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.example.delivery.AppMain"]
+
+  order_app:
+    container_name: order_app
+    image: restate-app:0.0.1
+    environment:
+      - RESTAURANT_ENDPOINT=http://restaurantpos:5050
+      - KAFKA_BOOTSTRAP_SERVERS=broker:29092
+    entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.example.order.AppMain"]
+
+  runtime:
+    image: docker.io/restatedev/restate:0.9.2
+    depends_on:
+      - restaurantpos
+      - broker
+      - rest-proxy
+      - jaeger
+    ports:
+      - "9070:9070"
+      - "9071:9071"
+      - "8080:8080"
+    volumes:
+      - ./restate-docker.toml:/restate.toml:Z,ro
+    environment:
+      - RESTATE_CONFIG=/restate.toml
+
+  runtimesetup:
+    image: alpine
+    depends_on:
+      - runtime
+      - restate_app
+    restart: "no"
+    entrypoint: ["sh", "-c", "sleep 5 && 
+    apk add --no-cache bash jq curl &&
+    curl -X POST 'runtime:9070/deployments' -H 'content-type: application/json' -d '{\"uri\": \"http://restate_app:9081\"}' &&
+    curl -X POST 'runtime:9070/deployments' -H 'content-type: application/json' -d '{\"uri\": \"http://order_app:9080\"}' &&
+    sleep 3 && 
+    curl -X POST 'runtime:9070/subscriptions' -H 'content-type: application/json' -d '{ \"source\":\"kafka://my-cluster/orders\", \"sink\":\"service://OrderWorkflow/create\" }' &&
+    curl -X POST 'runtime:9070/subscriptions' -H 'content-type: application/json' -d '{ \"source\":\"kafka://my-cluster/driver-updates\", \"sink\":\"service://DriverDigitalTwin/handleDriverLocationUpdateEvent\" }' &&
+    sleep 3 && 
+    curl -X POST 'runtime:8080/DriverMobileAppSimulator/driver-A/startDriver' && 
+    curl -X POST 'runtime:8080/DriverMobileAppSimulator/driver-B/startDriver' && 
+    exit 1"]
 
   foodorderingwebui:
     build:
       context: ./webui
+    depends_on:
+      - runtimesetup
     ports:
       - "3000:3000"

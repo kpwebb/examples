@@ -9,7 +9,7 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples.types;
+package dev.restate.example.types;
 
 public enum StatusEnum {
   NEW(0),

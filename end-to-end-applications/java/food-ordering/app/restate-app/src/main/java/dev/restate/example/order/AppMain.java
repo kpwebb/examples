@@ -9,10 +9,12 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples.types;
+package dev.restate.example.order;
 
-public enum DriverStatus {
-  IDLE,
-  WAITING_FOR_WORK,
-  DELIVERING
+import dev.restate.sdk.http.vertx.RestateHttpEndpointBuilder;
+
+public class AppMain {
+  public static void main(String[] args) {
+    RestateHttpEndpointBuilder.builder().bind(new OrderWorkflow()).buildAndListen(9080);
+  }
 }

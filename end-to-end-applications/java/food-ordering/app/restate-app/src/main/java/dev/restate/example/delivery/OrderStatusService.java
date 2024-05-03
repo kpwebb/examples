@@ -9,15 +9,15 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples;
+package dev.restate.example.delivery;
 
+import dev.restate.example.types.StatusEnum;
 import dev.restate.sdk.ObjectContext;
 import dev.restate.sdk.annotation.Handler;
 import dev.restate.sdk.annotation.VirtualObject;
 import dev.restate.sdk.common.CoreSerdes;
 import dev.restate.sdk.common.StateKey;
 import dev.restate.sdk.common.TerminalException;
-import dev.restate.sdk.examples.types.StatusEnum;
 import dev.restate.sdk.serde.jackson.JacksonSerdes;
 
 @VirtualObject

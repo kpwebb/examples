@@ -9,17 +9,17 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples;
+package dev.restate.example.delivery;
 
+import dev.restate.example.types.AssignDeliveryRequest;
+import dev.restate.example.types.AssignedDelivery;
+import dev.restate.example.types.DriverStatus;
+import dev.restate.example.types.Location;
 import dev.restate.sdk.ObjectContext;
 import dev.restate.sdk.annotation.Handler;
 import dev.restate.sdk.annotation.VirtualObject;
 import dev.restate.sdk.common.StateKey;
 import dev.restate.sdk.common.TerminalException;
-import dev.restate.sdk.examples.types.AssignDeliveryRequest;
-import dev.restate.sdk.examples.types.AssignedDelivery;
-import dev.restate.sdk.examples.types.DriverStatus;
-import dev.restate.sdk.examples.types.Location;
 import dev.restate.sdk.serde.jackson.JacksonSerdes;
 import java.util.Optional;
 

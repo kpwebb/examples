@@ -9,7 +9,7 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples.types;
+package dev.restate.example.types;
 
 import dev.restate.sdk.common.Serde;
 import dev.restate.sdk.serde.jackson.JacksonSerdes;

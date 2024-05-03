@@ -9,7 +9,7 @@
  * https://github.com/restatedev/examples/
  */
 
-package dev.restate.sdk.examples;
+package dev.restate.example.delivery;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import dev.restate.sdk.ObjectContext;
