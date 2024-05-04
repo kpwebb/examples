@@ -11,16 +11,14 @@
 
 package dev.restate.example.order.clients;
 
-import dev.restate.example.order.OrderWorkflow;
 import dev.restate.sdk.common.TerminalException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class RestaurantClient {
   private final Logger logger = LogManager.getLogger(RestaurantClient.class);
@@ -46,7 +44,9 @@ public class RestaurantClient {
 
   private void call(String orderId, String callbackId, String method)
       throws IOException, InterruptedException {
-    logger.info(String.format("Calling restaurant service with orderId %s and callbackId %s",orderId, callbackId));
+    logger.info(
+        String.format(
+            "Calling restaurant service with orderId %s and callbackId %s", orderId, callbackId));
     URI uri = URI.create(RESTAURANT_ENDPOINT + method);
     String requestBody = String.format("{\"cb\":\"%s\",\"orderId\":\"%s\"}", callbackId, orderId);
     HttpRequest request =
@@ -60,7 +60,7 @@ public class RestaurantClient {
       throw new TerminalException(
           "Prepare request to restaurant failed with status code: " + response.statusCode());
     } else {
-        logger.info("Restaurant service responded with " + response.statusCode());
-        }
+      logger.info("Restaurant service responded with " + response.statusCode());
+    }
   }
 }

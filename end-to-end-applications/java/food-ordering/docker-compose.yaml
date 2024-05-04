@@ -71,7 +71,6 @@ services:
       - "5050:5050"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.example.RestaurantMain"]
 
   restate_app:
     container_name: restate_app
@@ -81,7 +80,6 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
     ports:
       - "9081:9081"
-    entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.example.delivery.AppMain"]
 
   foodorderingwebui:
     build:

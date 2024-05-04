@@ -23,7 +23,6 @@ import dev.restate.sdk.annotation.Handler;
 import dev.restate.sdk.annotation.VirtualObject;
 import dev.restate.sdk.common.CoreSerdes;
 import dev.restate.sdk.common.TerminalException;
-
 import java.time.Duration;
 
 /**
@@ -35,7 +34,6 @@ import java.time.Duration;
 public class OrderWorkflow {
   private final RestaurantClient restaurant = RestaurantClient.get();
   private final PaymentClient paymentClnt = PaymentClient.get();
-
 
   @Handler
   public void create(ObjectContext ctx, OrderRequest order) throws TerminalException {
