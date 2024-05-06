@@ -36,10 +36,8 @@ export async function createOrder(orderId: string, order: any) {
 
 export async function getStatus(orderId: string) {
   return await (
-    await axios.post(`${RESTATE_HOST}/OrderStatusService/${orderId}/get`, null, {
+    await axios.get(`${RESTATE_HOST}/OrderStatusService/${orderId}/get`, {
       headers: challengeHeaders(),
-      // not sure why this removes the content-type header
-      transformRequest: (data, headers) => {},
     })
   ).data;
 }
