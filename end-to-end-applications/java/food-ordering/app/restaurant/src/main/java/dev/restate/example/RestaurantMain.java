@@ -47,7 +47,7 @@ public class RestaurantMain {
       ingressClient.awakeableHandle(node.get("cb").asText())
               // Resolve empty
               .resolve(CoreSerdes.VOID, null);
-        logger.info("Order {} prepared and ready for shipping", node.get("orderId").asText());
+      logger.info("Order {} prepared and ready for shipping", node.get("orderId").asText());
 
       t.sendResponseHeaders(200, -1);
     }

@@ -66,7 +66,7 @@ services:
     container_name: restaurantpos
     image: restaurant-app:0.0.1
     environment:
-      - RESTATE_RUNTIME_ENDPOINT=http://host.docker.internal:9090
+      - RESTATE_RUNTIME_ENDPOINT=http://host.docker.internal:8080
     ports:
       - "5050:5050"
     extra_hosts:
@@ -80,6 +80,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
     ports:
       - "9081:9081"
+    entrypoint: ["java", "-cp", "@/app/jib-classpath-file", "dev.restate.example.delivery.AppMain"]
 
   foodorderingwebui:
     build:

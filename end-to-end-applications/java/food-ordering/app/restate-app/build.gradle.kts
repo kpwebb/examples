@@ -36,13 +36,12 @@ dependencies {
 
 // Set main class
 application {
-    if (project.hasProperty("delivery")) {
-        mainClass.set("dev.restate.example.delivery.AppMain")
+    if (project.hasProperty("mainClass")) {
+        mainClass.set(project.property("mainClass") as String);
     } else {
         mainClass.set("dev.restate.example.order.AppMain")
     }
 }
-
 
 jib {
     to.image = "restate-app:0.0.1"
