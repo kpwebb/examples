@@ -12,7 +12,7 @@ if (!OPENAI_API_KEY) {
 
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
 const MODEL = "gpt-4o";
-const TEMPERATURE = 0.2; // use more stable (less random / cerative) responses
+const TEMPERATURE = 0.2; // use more stable (less random / creative) responses
 
 export type Role = "user" | "assistant" | "system";
 export type ChatEntry = { role: Role , content: string };

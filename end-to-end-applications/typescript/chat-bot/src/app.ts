@@ -27,5 +27,5 @@ if (mode === "SLACK") {
     chat.notificationHandler(slackbot.notificationHandler)
 }
 
-// start the defaut http2 server (alternatively export as lambda handler, http handler, ...)
+// start the default http2 server (alternatively export as lambda handler, http handler, ...)
 endpoint.listen(9080);

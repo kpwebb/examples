@@ -16,7 +16,7 @@ const reminderSvc = restate.workflow({
         run: async(ctx: restate.WorkflowContext, opts: ReminderOpts) => {
             ctx.set("timestamp", opts.timestamp);
 
-            const delay = opts.timestamp - await ctx.date.now();
+            const delay = opts.timestamp - ctx.date.now();
             const sleep = ctx.sleep(delay);
 
             const cancelled = ctx.promise<boolean>("cancelled");
