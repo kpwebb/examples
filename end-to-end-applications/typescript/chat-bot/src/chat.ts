@@ -22,7 +22,7 @@ export const chatSessionService = restate.object({
             const activeTasks = await ctx.get<Record<string, RunningTask>>("tasks");
 
             // call LLM and parse the reponse
-            const gptResponse = await ctx.run("call GTP", () => gpt.chat({
+            const gptResponse = await ctx.run("call GPT", () => gpt.chat({
                 botSetupPrompt: setupPrompt(),
                 chatHistory,
                 userPrompts: [tasksToPromt(activeTasks), message]

@@ -34,5 +34,4 @@ async def cancel(ctx: WorkflowSharedContext):
 
 @reminder.handler()
 async def current_status(ctx: WorkflowSharedContext):
-
-
+    return

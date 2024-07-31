@@ -1,8 +1,14 @@
+import asyncio
 import os
+from dataclasses import dataclass
 from enum import Enum
-
 import requests
-from typing import List, Dict, Union, Optional, TypedDict
+
+from typing import List, Dict, Union, Optional, TypedDict, Callable
+
+from restate import ObjectContext
+
+from chatbot.slackbot import slackbot
 
 # ----------------------------------------------------------------------------
 #  Utilities and helpers to interact with OpenAI GPT APIs.
@@ -17,6 +23,8 @@ OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
 MODEL = "gpt-4o"
 TEMPERATURE = 0.2  # use more stable (less random / creative) responses
 
+MODE = os.environ.get("MODE", "CONSOLE")
+
 
 class Role(Enum):
     USER = "user"
@@ -24,12 +32,14 @@ class Role(Enum):
     SYSTEM = "system"
 
 
-class ChatEntry(TypedDict):
+@dataclass
+class ChatEntry:
     role: Role
     content: str
 
 
-class GptResponse(TypedDict):
+@dataclass
+class GptResponse:
     response: str
     tokens: int
 
@@ -45,16 +55,13 @@ def http_response_to_error(status, text):
 
 
 async def chat(setup_prompt: str, history: List[ChatEntry], user_prompts: List[str]) -> GptResponse:
-    setup_prompt = [{"role": "system", "content": setup_prompt}]
-    user_prompts = [{"role": "user", "content": user_prompt} for user_prompt in user_prompts]
-    full_prompt = setup_prompt + history + user_prompts
+    setup_prompt = [ChatEntry(role=Role.SYSTEM, content=setup_prompt)]
+    user_prompts = [ChatEntry(role=Role.USER, content=user_prompt) for user_prompt in user_prompts]
+    full_prompt: List[ChatEntry] = setup_prompt + history + user_prompts
 
     response = await call_gpt(full_prompt)
 
-    return {
-        "response": response["message"]["content"],
-        "tokens": response["total_tokens"]
-    }
+    return GptResponse(response=response["message"].content, tokens=response["total_tokens"])
 
 
 async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]]:
@@ -81,17 +88,27 @@ async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]
         message = data["choices"][0]["message"]
         total_tokens = data["usage"]["total_tokens"]
         return {"message": message, "total_tokens": total_tokens}
+
     except Exception as error:
         print(f"Error calling model {MODEL} at {OPENAI_ENDPOINT}: {error}")
         check_rethrow_terminal_error(error)
 
 
-def concat_history(history: Optional[List[ChatEntry]], entries: Dict[str, Optional[str]]) -> List[ChatEntry]:
+def concat_history(history: List[ChatEntry], entries: Dict[str, Optional[str]]):
     chat_history = history or []
-    new_entries: List[ChatEntry] = []
+    new_entries = [ChatEntry(role=Role.USER, content=entries["user"])]
 
-    new_entries.append({"role": "user", "content": entries["user"]})
     if entries.get("bot"):
-        new_entries.append({"role": "assistant", "content": entries["bot"]})
+        new_entries.append({"role": Role.ASSISTANT, "content": entries["bot"]})
 
-    return chat_history + new_entries
+
+async def async_task_notification(ctx: ObjectContext, session: str, msg: str):
+    if MODE == "SLACK":
+        slackbot.notificationHandler()
+
+    print(f" --- NOTIFICATION from session {session} --- : {msg}")
+
+
+def notification_handler(handler: Callable[[str, str, str], asyncio.Future]):
+    global async_task_notification
+    async_task_notification = handler
