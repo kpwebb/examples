@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Dict
 
 from restate import VirtualObject, ObjectContext
+from restate.serde import Serde
 
 from chatbot.utils import gpt
-from chatbot.utils.gpt import async_task_notification
+from chatbot.utils.gpt import async_task_notification, GptResponseSerde
 from chatbot.utils.prompt import setup_prompt, tasks_to_prompt, parse_gpt_response, interpret_command, RunningTask
 
 
@@ -31,21 +32,21 @@ async def chat_message(ctx: ObjectContext, message: str):
         )
 
     # call LLM and parse response
-    gpt_response = await ctx.run("call GPT", chat)
+    gpt_response = await ctx.run("call GPT", chat, GptResponseSerde())
 
-    command = parse_gpt_response(gpt_response['response'])
+    command = parse_gpt_response(gpt_response.response)
 
     # interpret the command and fork tasks as indicated
-    new_active_tasks, task_message = await interpret_command(ctx, ctx.key(), active_tasks, command)
+    output = await interpret_command(ctx, ctx.key(), active_tasks, command)
 
     # persist the new active tasks and updated history
-    if new_active_tasks:
-        ctx.set("tasks", new_active_tasks)
-    ctx.set("chat_history", gpt.concat_history(chat_history, {"user": message, "bot": gpt_response['response']}))
+    if output["newActiveTasks"]:
+        ctx.set("tasks", output["newActiveTasks"])
+    ctx.set("chat_history", gpt.concat_history(chat_history, {"user": message, "bot": gpt_response.response}))
 
     return {
-        "message": command['message'],
-        "quote": task_message
+        "message": command.message,
+        "quote": output["taskMessage"]
     }
 
 

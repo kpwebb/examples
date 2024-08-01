@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from dataclasses import dataclass
 from enum import Enum
@@ -7,6 +8,7 @@ import requests
 from typing import List, Dict, Union, Optional, TypedDict, Callable
 
 from restate import ObjectContext
+from restate.serde import Serde
 
 from chatbot.slackbot import slackbot
 
@@ -31,17 +33,43 @@ class Role(Enum):
     ASSISTANT = "assistant"
     SYSTEM = "system"
 
+    def to_json(self):
+        return self.value
+
 
 @dataclass
 class ChatEntry:
     role: Role
     content: str
 
+    def to_json(self):
+        return {
+            "role": self.role.to_json(),
+            "content": self.content
+        }
+
 
 @dataclass
 class GptResponse:
     response: str
     tokens: int
+
+
+class GptResponseSerde(Serde[GptResponse]):
+    def deserialize(self, buf: bytes) -> Optional[GptResponse]:
+        if not buf:
+            return None
+        data = json.loads(buf)
+        return GptResponse(response=data["response"], tokens=data["tokens"])
+
+    def serialize(self, obj: Optional[GptResponse]) -> bytes:
+        if obj is None:
+            return bytes()
+        data = {
+            "response": obj.response,
+            "tokens": obj.tokens
+        }
+        return bytes(json.dumps(data), "utf-8")
 
 
 def check_rethrow_terminal_error(error):
@@ -61,7 +89,7 @@ async def chat(setup_prompt: str, history: List[ChatEntry], user_prompts: List[s
 
     response = await call_gpt(full_prompt)
 
-    return GptResponse(response=response["message"].content, tokens=response["total_tokens"])
+    return GptResponse(response=response["message"]["content"], tokens=response["total_tokens"])
 
 
 async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]]:
@@ -69,7 +97,7 @@ async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]
         body = {
             "model": MODEL,
             "temperature": TEMPERATURE,
-            "messages": messages
+            "messages": [m.to_json() for m in messages]
         }
 
         response = requests.post(
@@ -104,7 +132,7 @@ def concat_history(history: List[ChatEntry], entries: Dict[str, Optional[str]]):
 
 async def async_task_notification(ctx: ObjectContext, session: str, msg: str):
     if MODE == "SLACK":
-        slackbot.notificationHandler()
+        await slackbot.notificationHandler()
 
     print(f" --- NOTIFICATION from session {session} --- : {msg}")
 

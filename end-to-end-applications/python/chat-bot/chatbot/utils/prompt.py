@@ -3,9 +3,12 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, List, Dict
+import taskmanager as tasks
 
 from restate import Context
 from restate.exceptions import TerminalError
+
+from chatbot.utils.gpt import GptResponse
 
 
 class Action(Enum):
@@ -59,7 +62,7 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
             name = check_action_field(Action.CANCEL, command, "task_name")
             task = active_tasks.get(name)
             if task is None:
-                return {"taskMessage": f"No task with name '{name}' is currently active."}
+                return {"newActiveTasks": {}, "taskMessage": f"No task with name '{name}' is currently active."}
 
             await tasks.cancel_task(ctx, task.workflow, task.workflowId)
 
@@ -68,24 +71,24 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
             return {"newActiveTasks": new_active_tasks, "taskMessage": f"Removed task '{name}'"}
 
         elif command.action == Action.LIST:
-            return {"taskMessage": "tasks = " + json.dumps(active_tasks, indent=4)}
+            return {"newActiveTasks": {}, "taskMessage": "tasks = " + json.dumps(active_tasks, indent=4)}
 
         elif command.action == Action.STATUS:
             name = check_action_field(Action.STATUS, command, "task_name")
             task = active_tasks.get(name)
             if task is None:
-                return {"taskMessage": f"No task with name '{name}' is currently active."}
+                return {"newActiveTasks": {}, "taskMessage": f"No task with name '{name}' is currently active."}
 
             status = await tasks.get_task_status(ctx, task.workflow, task.workflowId)
-            return {"taskMessage": f"{name}.status = {json.dumps(status, indent=4)}"}
+            return {"newActiveTasks": {}, "taskMessage": f"{name}.status = {json.dumps(status, indent=4)}"}
 
         elif command.action == Action.OTHER:
-            return {}
+            return {"newActiveTasks": {}, "taskMessage": "I'm sorry, I don't understand what you want me to do."}
 
     except TerminalError as e:
         raise e
     except Exception as e:
-        raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}", cause=e)
+        raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}")
 
 
 def remove_task(active_tasks: Optional[Dict[str, RunningTask]], task_name: str) -> Dict[str, RunningTask]:
@@ -103,16 +106,16 @@ def check_action_field(action: Action, command: GptTaskCommand, field_name: str)
     return value
 
 
-def parse_gpt_response(response: str) -> dict:
+def parse_gpt_response(response: str) -> GptTaskCommand:
     try:
         result = json.loads(response)
         if 'action' not in result:
             raise ValueError("property 'action' is missing")
         if 'message' not in result:
             raise ValueError("property 'message' is missing")
-        return result
+        return GptTaskCommand(action=Action(result["action"]), message=result["message"])
     except (ValueError, json.JSONDecodeError) as e:
-        raise TerminalError(f"Malformed response from LLM: {str(e)}.\nRaw response:\n{response}", cause=e)
+        raise TerminalError(f"Malformed response from LLM: {str(e)}.\nRaw response:\n{response}")
 
 
 def tasks_to_prompt(tasks):
