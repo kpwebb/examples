@@ -40,3 +40,11 @@ Register the service:
 ```shell
 restate dp register http://localhost:8000
 ```
+
+Then interact with the chatbot via:
+
+```shell
+http localhost:8080/chatSession/Malik/chat_message  --raw='"Hey, I am Malik, can you set an alarm in one minute to drink water?"'
+```
+
+That's it! We managed to run the example, interact with the chatbot, and run tasks!

@@ -3,8 +3,9 @@ from typing import Dict
 from restate import VirtualObject, ObjectContext
 
 from chatbot.utils import gpt
-from chatbot.utils.gpt import async_task_notification, GptResponseSerde
-from chatbot.utils.prompt import setup_prompt, tasks_to_prompt, parse_gpt_response, interpret_command, RunningTask
+from chatbot.utils.gpt import async_task_notification, GptResponseSerde, ChatEntry
+from chatbot.utils.prompt import setup_prompt, tasks_to_prompt, parse_gpt_response, interpret_command, RunningTask, \
+    RunningTaskDictSerde
 from chatbot.utils.types import TaskResult
 
 chatbot = VirtualObject("chatSession")
@@ -13,8 +14,8 @@ chatbot = VirtualObject("chatSession")
 @chatbot.handler()
 async def chat_message(ctx: ObjectContext, message: str):
     # get current history and ongoing tasks
-    chat_history = await ctx.get("chat_history") or []
-    active_tasks = await ctx.get("tasks") or []
+    chat_history: list[ChatEntry] = await ctx.get("chat_history") or []
+    active_tasks: Dict[str, RunningTask] = await ctx.get("tasks") or {}
 
     async def chat():
         return await gpt.chat(
@@ -33,7 +34,7 @@ async def chat_message(ctx: ObjectContext, message: str):
 
     # persist the new active tasks and updated history
     if output["newActiveTasks"]:
-        ctx.set("tasks", output["newActiveTasks"])
+        ctx.set("tasks", output["newActiveTasks"], RunningTaskDictSerde())
     ctx.set("chat_history", gpt.concat_history(chat_history, {"user": message, "bot": gpt_response.response}))
 
     return {

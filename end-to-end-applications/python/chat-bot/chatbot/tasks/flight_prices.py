@@ -1,15 +1,18 @@
 from datetime import timedelta
+from typing import Any
 
 from restate import Workflow, WorkflowContext, WorkflowSharedContext
 
-from chatbot.utils.flight_price_api import FlightPriceOpts, get_best_quote
+from chatbot.taskmanager import TaskSpec
+from chatbot.utils.flight_price_api import FlightPriceOpts, get_best_quote, RoundTripRouteDetails
+from chatbot.utils.utils import parse_currency, check_field
 
 POLL_INTERVAL = 10000
 
 flight_watcher = Workflow("flight_price_watcher")
 
 
-@flight_watcher.handlers()
+@flight_watcher.handler()
 async def run(ctx: WorkflowContext, opts: FlightPriceOpts):
     cancelled = ctx.promise("cancelled")
     attempt = 0
@@ -36,3 +39,33 @@ async def cancel(ctx: WorkflowSharedContext):
 @flight_watcher.handler()
 async def current_status(ctx: WorkflowSharedContext):
     return await ctx.get("last_quote")
+
+
+def params_parser(name: str, params: Any) -> FlightPriceOpts:
+    description = params.get("description")
+    if not isinstance(description, str):
+        description = None
+
+    price_threshold_usd = parse_currency(check_field(params, "price_threshold"))
+
+    trip = RoundTripRouteDetails(
+        start=check_field(params, "start_airport"),
+        destination=check_field(params, "destination_airport"),
+        outbound_date=check_field(params, "outbound_date"),
+        return_date=check_field(params, "return_date"),
+        travel_class=check_field(params, "travel_class")
+    )
+
+    return FlightPriceOpts(
+        name=name,
+        description=description,
+        trip=trip,
+        price_threshold_usd=price_threshold_usd
+    )
+
+
+flightTask = TaskSpec(
+    params_parser=params_parser,
+    task_type_name="flight_price",
+    task_workflow=flight_watcher
+)

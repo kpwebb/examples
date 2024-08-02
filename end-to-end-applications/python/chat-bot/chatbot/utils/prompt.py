@@ -7,9 +7,9 @@ import taskmanager as tasks
 
 from restate import Context
 from restate.exceptions import TerminalError
+from restate.serde import Serde
 
 from chatbot.taskmanager import TaskOpts
-from chatbot.utils.gpt import GptResponse
 
 
 class Action(Enum):
@@ -37,9 +37,46 @@ class RunningTask:
     params: dict
 
 
+class RunningTaskSerde(Serde[RunningTask]):
+    def serialize(self, obj: Optional[RunningTask]) -> bytes:
+        if obj is None:
+            return bytes()
+        data = {
+            "name": obj.name,
+            "workflowId": obj.workflowId,
+            "workflow": obj.workflow,
+            "params": obj.params
+        }
+        return bytes(json.dumps(data), "utf-8")
+
+    def deserialize(self, buf: bytes) -> Optional[RunningTask]:
+        if not buf:
+            return None
+        data = json.loads(buf)
+        return RunningTask(
+            name=data["name"],
+            workflowId=data["workflowId"],
+            workflow=data["workflow"],
+            params=data["params"]
+        )
+
+
+class RunningTaskDictSerde(Serde[Dict[str, RunningTask]]):
+    def serialize(self, tasks: Optional[Dict[str, RunningTask]]) -> bytes:
+        if tasks is None:
+            return bytes()
+        data = {name: RunningTaskSerde().serialize(task).decode('utf-8') for name, task in tasks.items()}
+        return bytes(json.dumps(data), "utf-8")
+
+    def deserialize(self, buf: bytes) -> Optional[Dict[str, RunningTask]]:
+        if not buf:
+            return None
+        data = json.loads(buf)
+        return {name: RunningTaskSerde().deserialize(bytes(task, 'utf-8')) for name, task in data.items()}
+
+
 async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[str, RunningTask],
                             command: GptTaskCommand):
-
     try:
         if command.action == Action.CREATE:
             name = check_action_field(Action.CREATE, command, "task_name")
@@ -88,8 +125,8 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
 
     except TerminalError as e:
         raise e
-    # except Exception as e:
-    #     raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}")
+    except Exception as e:
+        raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}")
 
 
 def remove_task(active_tasks: Optional[Dict[str, RunningTask]], task_name: str) -> Dict[str, RunningTask]:
