@@ -8,6 +8,7 @@ import taskmanager as tasks
 from restate import Context
 from restate.exceptions import TerminalError
 
+from chatbot.taskmanager import TaskOpts
 from chatbot.utils.gpt import GptResponse
 
 
@@ -49,7 +50,7 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
                 raise ValueError(f"Task with name {name} already exists.")
 
             workflow_id = await tasks.start_task(ctx, channel_name,
-                                                 {"name": name, "workflowName": workflow, "params": params})
+                                                 TaskOpts(name=name, workflow_name=workflow, params=params))
 
             new_active_tasks = active_tasks.copy()
             new_active_tasks[name] = RunningTask(name, workflow_id, workflow, params)
@@ -87,8 +88,8 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
 
     except TerminalError as e:
         raise e
-    except Exception as e:
-        raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}")
+    # except Exception as e:
+    #     raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}")
 
 
 def remove_task(active_tasks: Optional[Dict[str, RunningTask]], task_name: str) -> Dict[str, RunningTask]:
@@ -113,7 +114,13 @@ def parse_gpt_response(response: str) -> GptTaskCommand:
             raise ValueError("property 'action' is missing")
         if 'message' not in result:
             raise ValueError("property 'message' is missing")
-        return GptTaskCommand(action=Action(result["action"]), message=result["message"])
+        return GptTaskCommand(
+            action=Action(result["action"]),
+            message=result["message"],
+            task_name=result.get("task_name"),
+            task_type=result.get("task_type"),
+            task_spec=result.get("task_spec")
+        )
     except (ValueError, json.JSONDecodeError) as e:
         raise TerminalError(f"Malformed response from LLM: {str(e)}.\nRaw response:\n{response}")
 

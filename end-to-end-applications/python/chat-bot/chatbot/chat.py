@@ -1,19 +1,11 @@
-from dataclasses import dataclass
 from typing import Dict
 
 from restate import VirtualObject, ObjectContext
-from restate.serde import Serde
 
 from chatbot.utils import gpt
 from chatbot.utils.gpt import async_task_notification, GptResponseSerde
 from chatbot.utils.prompt import setup_prompt, tasks_to_prompt, parse_gpt_response, interpret_command, RunningTask
-
-
-@dataclass
-class TaskResult:
-    task_name: str
-    result: str
-
+from chatbot.utils.types import TaskResult
 
 chatbot = VirtualObject("chatSession")
 
@@ -52,14 +44,17 @@ async def chat_message(ctx: ObjectContext, message: str):
 
 @chatbot.handler()
 async def task_done(ctx: ObjectContext, result: TaskResult):
+    task_name = result["task_name"]
+    result = result["result"]
+
     # Remove task from list of active tasks
     active_tasks: Dict[str, RunningTask] = await ctx.get("tasks") or {}
-    if result.task_name in active_tasks:
-        active_tasks.pop(result.task_name)
+    if task_name in active_tasks:
+        active_tasks.pop(task_name)
     ctx.set("tasks", active_tasks)
 
     history = await ctx.get("chat_history")
-    new_history = gpt.concat_history(history=history, entries={"user": f"The task with name '{result.task_name}' is finished."})
+    new_history = gpt.concat_history(history=history, entries={"user": f"The task with name '{task_name}' is finished."})
     ctx.set("chat_history", new_history)
 
-    return await async_task_notification(ctx, ctx.key(), f"Task {result.task_name} says: {result.result}")
+    return await async_task_notification(ctx, ctx.key(), f"Task {task_name} says: {result}")

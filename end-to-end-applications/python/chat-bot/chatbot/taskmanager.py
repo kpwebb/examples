@@ -1,11 +1,12 @@
 import uuid
-from typing import Callable, Dict, TypeVar, Generic, Any, Awaitable
+from typing import Callable, Dict, TypeVar, Generic, Any, Awaitable, TypedDict
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from restate import Context, WorkflowContext, WorkflowSharedContext, Service
+from restate import Context, WorkflowContext, WorkflowSharedContext, Service, Workflow
 
 from chatbot import chat
+from chatbot.utils.types import TaskResult
 
 # ----------------------------------------------------------------------------
 #  The Task Manager has the map of available task workflows.
@@ -33,7 +34,7 @@ class TaskWorkflow(Generic[P]):
 @dataclass
 class TaskSpec(Generic[P]):
     task_type_name: str
-    task_workflow: TaskWorkflow[P]
+    task_workflow: Workflow
     params_parser: Callable[[str, dict], P]
 
 
@@ -52,20 +53,13 @@ class TaskOpts:
     workflow_name: str
     params: dict
 
-
-@dataclass
-class TaskResult:
-    task_name: str
-    result: str
-
-
 async def start_task(ctx: Context, channel_for_result: str, task_opts: TaskOpts) -> UUID:
     task = available_task_types.get(task_opts.workflow_name)
     if not task:
         raise ValueError(f"Unknown task type: {task_opts.workflow_name}")
 
     workflow_params = task.params_parser(task_opts.name, task_opts.params)
-    workflow_id = await ctx.run("workflow_id", lambda: uuid.uuid4())
+    workflow_id = await ctx.run("workflow_id", lambda: str(uuid.uuid4()))
 
     ctx.service_send(invoke_workflow, {
         'task_name': task_opts.name,
