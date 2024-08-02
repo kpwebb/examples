@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 import requests
 
-from typing import List, Dict, Union, Optional, TypedDict, Callable
+from typing import List, Dict, Union, Optional, Callable
 
 from restate import ObjectContext
 from restate.serde import Serde

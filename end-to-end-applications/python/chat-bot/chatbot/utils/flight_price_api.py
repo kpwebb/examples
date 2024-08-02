@@ -1,21 +1,7 @@
 from datetime import datetime
 import random
-from typing import TypedDict
 
-
-class RoundTripRouteDetails(TypedDict):
-    start: str
-    destination: str
-    outbound_date: str
-    return_date: str
-    travel_class: str
-
-
-class FlightPriceOpts(TypedDict):
-    name: str
-    trip: RoundTripRouteDetails
-    price_threshold_usd: float
-    description: str
+from chatbot.utils.types import RoundTripRouteDetails
 
 
 def get_best_quote(trip: RoundTripRouteDetails, price_threshold: float):

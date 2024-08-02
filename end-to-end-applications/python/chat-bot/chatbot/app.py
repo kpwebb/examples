@@ -3,7 +3,7 @@ import restate
 from chatbot.chat import chatbot
 from chatbot.slackbot import slackbot
 from chatbot.taskmanager import workflow_invoker
-import taskmanager as tm
+import chatbot.taskmanager as tm
 from chatbot.tasks.flight_prices import flightTask, flight_watcher
 from chatbot.tasks.reminder import reminderTask, reminder
 

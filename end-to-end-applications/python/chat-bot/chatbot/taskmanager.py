@@ -1,12 +1,12 @@
 import uuid
-from typing import Callable, Dict, TypeVar, Generic, Any, Awaitable, TypedDict
-from dataclasses import dataclass, field
-from uuid import UUID
+from typing import Dict, Any
 
-from restate import Context, WorkflowContext, WorkflowSharedContext, Service, Workflow
+from restate import Context, Service
 
 from chatbot import chat
-from chatbot.utils.types import TaskResult
+from chatbot.tasks.reminder import run
+from chatbot.tasks.task_workflow import TaskSpec
+from chatbot.utils.types import TaskResult, TaskOpts
 
 # ----------------------------------------------------------------------------
 #  The Task Manager has the map of available task workflows.
@@ -14,29 +14,6 @@ from chatbot.utils.types import TaskResult
 #  implementing workflow service, and has the utilities to start, cancel,
 #  and query them.
 # ----------------------------------------------------------------------------
-
-# ------------------ defining new types of task workflows --------------------
-
-P = TypeVar('P')
-
-
-class TaskWorkflow(Generic[P]):
-    async def run(self, ctx: WorkflowContext, params: P) -> str:
-        pass
-
-    async def cancel(self, ctx: WorkflowSharedContext) -> None:
-        pass
-
-    async def current_status(self, ctx: WorkflowSharedContext) -> Any:
-        pass
-
-
-@dataclass
-class TaskSpec(Generic[P]):
-    task_type_name: str
-    task_workflow: Workflow
-    params_parser: Callable[[str, dict], P]
-
 
 available_task_types: Dict[str, TaskSpec] = {}
 
@@ -47,13 +24,8 @@ def register_task_workflow(task: TaskSpec) -> None:
 
 # ----------------- start / cancel / query task workflows --------------------
 
-@dataclass
-class TaskOpts:
-    name: str
-    workflow_name: str
-    params: dict
 
-async def start_task(ctx: Context, channel_for_result: str, task_opts: TaskOpts) -> UUID:
+async def start_task(ctx: Context, channel_for_result: str, task_opts: TaskOpts) -> str:
     task = available_task_types.get(task_opts.workflow_name)
     if not task:
         raise ValueError(f"Unknown task type: {task_opts.workflow_name}")
@@ -63,7 +35,7 @@ async def start_task(ctx: Context, channel_for_result: str, task_opts: TaskOpts)
 
     ctx.service_send(invoke_workflow, {
         'task_name': task_opts.name,
-        'workflow_service_name': task.task_workflow.__class__.__name__,
+        'workflow_service_name': task_opts.workflow_name,
         'workflow_params': workflow_params,
         'workflow_id': workflow_id,
         'channel_for_result': channel_for_result
@@ -75,7 +47,7 @@ async def start_task(ctx: Context, channel_for_result: str, task_opts: TaskOpts)
 async def cancel_task(ctx: Context, workflow_name: str, workflow_id: str) -> None:
     task = available_task_types.get(workflow_name)
     if not task:
-        raise ValueError(f"Unknown task type: {workflow_name}")
+        raise ValueError(f"Can't cancel task type for workflow ID {workflow_id} - Unknown task type: {workflow_name}")
 
     await ctx.workflow_call(task.task_workflow.cancel, workflow_id, None)
 
@@ -83,19 +55,21 @@ async def cancel_task(ctx: Context, workflow_name: str, workflow_id: str) -> Non
 async def get_task_status(ctx: Context, workflow_name: str, workflow_id: str) -> Any:
     task = available_task_types.get(workflow_name)
     if not task:
-        raise ValueError(f"Unknown task type: {workflow_name}")
+        raise ValueError(f"Can't get task status for workflow ID {workflow_id} - Unknown task type: {workflow_name}")
 
     return await ctx.workflow_call(task.task_workflow.current_status, workflow_id, None)
 
 
 workflow_invoker = Service("workflowInvoker")
 
+
 @workflow_invoker.handler()
 async def invoke_workflow(ctx: Context, opts: dict) -> None:
-    task_workflow_api = TaskWorkflow[str]()
+    print(f"Invoking workflow: {opts}")
+    task = available_task_types.get(opts["workflow_service_name"])
     response: TaskResult
     try:
-        result = await ctx.workflow_call(task_workflow_api.run, opts['workflow_id'], opts['workflow_params'])
+        result = await ctx.workflow_call(run, opts['workflow_id'], opts['workflow_params'])
         response = TaskResult(task_name=opts['task_name'], result=result)
     except Exception as e:
         response = TaskResult(task_name=opts['task_name'], result=f"Task failed: {str(e)}")
