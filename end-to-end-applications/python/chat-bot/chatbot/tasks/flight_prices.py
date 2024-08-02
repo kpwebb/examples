@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from typing import Any
 
@@ -16,6 +17,7 @@ flight_watcher = Workflow("flight_price_watcher")
 
 @flight_watcher.main()
 async def run(ctx: WorkflowContext, opts: FlightPriceOpts):
+    logging.info(f"Running flight price watcher for: {opts} and with ID {ctx.key()}")
     cancelled = ctx.promise("cancelled")
     attempt = 0
 

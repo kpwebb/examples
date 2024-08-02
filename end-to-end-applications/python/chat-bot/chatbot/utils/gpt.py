@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
@@ -18,7 +19,7 @@ from chatbot.slackbot import slackbot
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    print("Missing OPENAI_API_KEY environment variable")
+    logging.error("Missing OPENAI_API_KEY environment variable")
     exit(1)
 
 OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
@@ -118,7 +119,7 @@ async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]
         return {"message": message, "total_tokens": total_tokens}
 
     except Exception as error:
-        print(f"Error calling model {MODEL} at {OPENAI_ENDPOINT}: {error}")
+        logging.error(f"Error calling model {MODEL} at {OPENAI_ENDPOINT}: {error}")
         check_rethrow_terminal_error(error)
 
 
@@ -134,9 +135,4 @@ async def async_task_notification(ctx: ObjectContext, session: str, msg: str):
     if MODE == "SLACK":
         await slackbot.notificationHandler()
 
-    print(f" --- NOTIFICATION from session {session} --- : {msg}")
-
-
-def notification_handler(handler: Callable[[str, str, str], asyncio.Future]):
-    global async_task_notification
-    async_task_notification = handler
+    logging.info(f" --- NOTIFICATION from session {session} --- : {msg}")

@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime, timedelta
 from typing import TypedDict, Any
@@ -17,14 +18,11 @@ class ReminderOpts(TypedDict):
 
 @reminder.main()
 async def run(ctx: WorkflowContext, opts: ReminderOpts):
-    print(f"Reminder: {opts}")
+    logging.info(f"Running reminder workflow for: {opts}")
     ctx.set("timestamp", opts["timestamp"])
     time_now = await ctx.run("time", lambda: round(time.time() * 1000))
 
     delay = opts["timestamp"] - time_now
-
-    if delay < 0:
-        raise TerminalError("Can't set a reminder in the past")
 
     await ctx.sleep(timedelta(milliseconds=delay))
 

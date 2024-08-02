@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Dict, Any
 
@@ -65,7 +66,7 @@ workflow_invoker = Service("workflowInvoker")
 
 @workflow_invoker.handler()
 async def invoke_workflow(ctx: Context, opts: dict) -> None:
-    print(f"Invoking workflow: {opts}")
+    logging.info(f"Invoking workflow: {opts}")
     task = available_task_types.get(opts["workflow_service_name"])
     response: TaskResult
     try:
