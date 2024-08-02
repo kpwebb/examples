@@ -69,7 +69,7 @@ async def invoke_workflow(ctx: Context, opts: dict) -> None:
     task = available_task_types.get(opts["workflow_service_name"])
     response: TaskResult
     try:
-        result = await ctx.workflow_call(run, opts['workflow_id'], opts['workflow_params'])
+        result = await ctx.workflow_call(task.task_workflow.run, opts['workflow_id'], opts['workflow_params'])
         response = TaskResult(task_name=opts['task_name'], result=result)
     except Exception as e:
         response = TaskResult(task_name=opts['task_name'], result=f"Task failed: {str(e)}")
