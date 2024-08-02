@@ -47,4 +47,16 @@ Then interact with the chatbot via:
 http localhost:8080/chatSession/Malik/chat_message  --raw='"Hey, I am Malik, can you set an alarm in one minute to drink water?"'
 ```
 
+Or:
+
+```shell
+http localhost:8080/chatSession/Malik/chat_message  --raw='"Hey, I am Malik, can you set an alarm for the flight price of start airport Berlin to destination airport Vilnius for next week Tuesday 6 August 2024 and return date 8 August 2024 in first class with a maximum of 200 euro as price threshold?"'
+```
+
+Or:
+
+```shell
+http localhost:8080/chatSession/Malik/chat_message  --raw='"What is the best offer so far for task id flight_price_berlin_vilnius_20240806"'
+```
+
 That's it! We managed to run the example, interact with the chatbot, and run tasks!
