@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import TypedDict, Any
 
 from restate import Workflow, WorkflowContext, WorkflowSharedContext
-from restate.exceptions import TerminalError
 
 from chatbot.tasks.task_workflow import TaskWorkflow, TaskSpec
 
@@ -68,9 +67,5 @@ def params_parser(name: str, params: Any) -> ReminderOpts:
 reminderTask = TaskSpec(
     params_parser=params_parser,
     task_type_name="reminder",
-    task_workflow=TaskWorkflow(
-        run=run,
-        cancel=cancel,
-        current_status=current_status
-    )
+    task_workflow=TaskWorkflow(run, cancel, current_status)
 )

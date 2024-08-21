@@ -71,9 +71,5 @@ def params_parser(name: str, params: Any) -> FlightPriceOpts:
 flightTask = TaskSpec(
     params_parser=params_parser,
     task_type_name="flight_price",
-    task_workflow=TaskWorkflow(
-        run=run,
-        cancel=cancel,
-        current_status=current_status
-    )
+    task_workflow=TaskWorkflow(run, cancel, current_status)
 )
