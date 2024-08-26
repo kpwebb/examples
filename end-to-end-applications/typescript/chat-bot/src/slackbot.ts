@@ -56,7 +56,7 @@ const slackBotService = restate.service({
 
         /*
          * This does the actual message processing, including de-duplication, interacting
-         * with status updates, and interacting with the chat bot.
+         * with status updates, and interacting with the chatbot.
          */
         process: async (ctx: restate.Context, msg: slack.SlackMessage) => {
             const { channel, text } = msg.event;

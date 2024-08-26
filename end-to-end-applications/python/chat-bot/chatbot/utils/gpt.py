@@ -11,7 +11,7 @@ from typing import List, Dict, Union, Optional, Callable
 from restate import ObjectContext
 from restate.serde import Serde
 
-from chatbot.slackbot import slackbot
+from chatbot.utils import slackutils
 
 # ----------------------------------------------------------------------------
 #  Utilities and helpers to interact with OpenAI GPT APIs.
@@ -133,6 +133,21 @@ def concat_history(history: List[ChatEntry], entries: Dict[str, Optional[str]]):
 
 async def async_task_notification(ctx: ObjectContext, session: str, msg: str):
     if MODE == "SLACK":
-        await slackbot.notificationHandler()
-
-    logging.info(f" --- NOTIFICATION from session {session} --- : {msg}")
+        blocks = [
+            {
+                "type": "divider"
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f":speech_balloon: {msg}"
+                }
+            },
+            {
+                "type": "divider"
+            }
+        ]
+        await slackutils.post_to_slack(session, msg, blocks)
+    else:
+        logging.info(f" --- NOTIFICATION from session {session} --- : {msg}")

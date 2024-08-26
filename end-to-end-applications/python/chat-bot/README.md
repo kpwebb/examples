@@ -56,7 +56,7 @@ http localhost:8080/chatSession/Malik/chat_message  --raw='"Hey, I am Malik, can
 Or:
 
 ```shell
-http localhost:8080/chatSession/Malik/chat_message  --raw='"What is the best offer so far for task id flight_price_berlin_vilnius_20240806"'
+http localhost:8080/chatSession/Malik/chat_message  --raw='"What is the best offer so far for task id flight_price_berlin_vilnius"'
 ```
 
 That's it! We managed to run the example, interact with the chatbot, and run tasks!
