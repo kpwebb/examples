@@ -1,11 +1,18 @@
+"""
+  The slack bot adapter
+
+  This is a proxy between slack webhooks/APIs and the chatbot, dealing
+  with all slack specific things, like deduplication, errors, formatting,
+  message updates, showing the bot's busy status, etc.
+"""
 import os
-
-from restate import Service, Context
-
 import logging
 
-from chatbot.chat import chat_message
-from chatbot.event_deduplicator import is_new_message
+from restate import Service, Context
+from restate.exceptions import TerminalError
+
+from chatbot import chat
+from chatbot import event_deduplicator
 from chatbot.utils import slackutils as slack
 
 logging.basicConfig(level=logging.DEBUG)
@@ -14,21 +21,16 @@ SLACK_BOT_USER_ID = os.getenv("SLACK_BOT_USER_ID")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 
-# ----------------------------------------------------------------------------
-#  The slack bot adapter
-#
-#  This is a proxy between slack webhooks/APIs and the chatbot, dealing
-#  with all slack specific things, like deduplication, errors, formatting,
-#  message updates, showing the bot's busy status, etc.
-# ----------------------------------------------------------------------------
 slackbot = Service("slackbot")
 
 
-# This is the handler hit by the webhook. We do minimal stuff here to
-# acknowledge the webhook as soon as possible (since it is guaranteed
-# to be durable in Restate).
 @slackbot.handler()
 async def message(ctx: Context, msg: slack.SlackMessage):
+    """
+    This is the handler hit by the webhook. We do minimal stuff here to
+    acknowledge the webhook as soon as possible (since it is guaranteed
+    to be durable in Restate).
+    """
     # verify first that event is legit
     slack.verify_signature(ctx.request().body, ctx.request().headers, SLACK_SIGNING_SECRET)
 
@@ -43,19 +45,20 @@ async def message(ctx: Context, msg: slack.SlackMessage):
     # run actual message processing asynchronously
     ctx.service_send(process, arg=msg)
 
-    return
 
-
-# This does the actual message processing, including de-duplication,
-# interacting with status updates, and interacting with the chatbot.
 @slackbot.handler()
 async def process(ctx: Context, msg: slack.SlackMessage):
+    """
+    This does the actual message processing, including de-duplication,
+    interacting with status updates, and interacting with the chatbot.
+    """
     channel = msg["event"]["channel"]
     text = msg["event"]["text"]
 
     # deduplicate messages
-    is_new_msg = await ctx.object_call(is_new_message, key=channel, arg=msg["event_id"])
-
+    is_new_msg = await ctx.object_call(event_deduplicator.is_new_message,
+                                       key=channel,
+                                       arg=msg["event_id"])
     if not is_new_msg:
         return
 
@@ -65,8 +68,8 @@ async def process(ctx: Context, msg: slack.SlackMessage):
 
     # talk to the chatbot - with a Virtual Object per channel
     try:
-        response = await ctx.object_call(chat_message, key=channel, arg=text)
-    except Exception as e:
+        response = await ctx.object_call(chat.chat_message, key=channel, arg=text)
+    except TerminalError as e:
         error_msg = f"Failed to process: {text}"
         await ctx.run("post error reply", lambda: slack.send_error_message(
             channel, error_msg, str(e), processing_msg_timestamp))

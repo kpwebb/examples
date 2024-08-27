@@ -1,15 +1,12 @@
-import asyncio
-import json
+"""
+Utility model to talk to OpenAI GPT API.
+"""
+
 import logging
 import os
-from dataclasses import dataclass
-from enum import Enum
+import sys
+from typing import List, Dict, Literal, TypedDict, Any
 import requests
-
-from typing import List, Dict, Union, Optional, Callable
-
-from restate import ObjectContext
-from restate.serde import Serde
 
 from chatbot.utils import slackutils
 
@@ -20,7 +17,7 @@ from chatbot.utils import slackutils
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     logging.error("Missing OPENAI_API_KEY environment variable")
-    exit(1)
+    sys.exit(1)
 
 OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
 MODEL = "gpt-4o"
@@ -28,77 +25,42 @@ TEMPERATURE = 0.2  # use more stable (less random / creative) responses
 
 MODE = os.environ.get("MODE", "CONSOLE")
 
-
-class Role(Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    SYSTEM = "system"
-
-    def to_json(self):
-        return self.value
-
-
-@dataclass
-class ChatEntry:
-    role: Role
+class ChatEntry(TypedDict):
+    """Represents a chat entry."""
+    role: Literal["user", "assistant", "system"]
     content: str
 
-    def to_json(self):
-        return {
-            "role": self.role.to_json(),
-            "content": self.content
-        }
+class NewChatEntry(TypedDict):
+    """Represents a new chat entry."""
+    user: str
+    bot: str | None
 
-
-@dataclass
-class GptResponse:
+class GptResponse(TypedDict):
+    """Represents a response from the GPT model."""
     response: str
     tokens: int
 
-
-class GptResponseSerde(Serde[GptResponse]):
-    def deserialize(self, buf: bytes) -> Optional[GptResponse]:
-        if not buf:
-            return None
-        data = json.loads(buf)
-        return GptResponse(response=data["response"], tokens=data["tokens"])
-
-    def serialize(self, obj: Optional[GptResponse]) -> bytes:
-        if obj is None:
-            return bytes()
-        data = {
-            "response": obj.response,
-            "tokens": obj.tokens
-        }
-        return bytes(json.dumps(data), "utf-8")
+async def chat(setup_prompt: str,
+               history: List[ChatEntry],
+               user_prompts: List[str]) -> GptResponse:
+    """
+        Setup the prompt and chat with the model using the given user prompts.
+    """
+    prompt = [ChatEntry(role="system", content=setup_prompt)]
+    prompt.extend(history)
+    prompt.extend((ChatEntry(role="user", content=user_prompt) for user_prompt in user_prompts))
+    return await call_gpt(prompt)
 
 
-def check_rethrow_terminal_error(error):
-    # Implement your error handling logic here
-    raise error
-
-
-def http_response_to_error(status, text):
-    # Implement your HTTP error handling logic here
-    raise Exception(f"HTTP Error {status}: {text}")
-
-
-async def chat(setup_prompt: str, history: List[ChatEntry], user_prompts: List[str]) -> GptResponse:
-    setup_prompt = [ChatEntry(role=Role.SYSTEM, content=setup_prompt)]
-    user_prompts = [ChatEntry(role=Role.USER, content=user_prompt) for user_prompt in user_prompts]
-    full_prompt: List[ChatEntry] = setup_prompt + history + user_prompts
-
-    response = await call_gpt(full_prompt)
-
-    return GptResponse(response=response["message"]["content"], tokens=response["total_tokens"])
-
-
-async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]]:
+async def call_gpt(messages: List[ChatEntry]) -> GptResponse:
+    """
+    Call the model with the given messages and return the response.
+    """
     try:
         body = {
             "model": MODEL,
             "temperature": TEMPERATURE,
-            "messages": [m.to_json() for m in messages]
+            "messages": messages
         }
 
         response = requests.post(
@@ -107,35 +69,45 @@ async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
                 "Content-Type": "application/json"
             },
-            json=body
+            json=body,
+            timeout=60, # wait for up to 60 seconds for a response
         )
 
         if not response.ok:
-            http_response_to_error(response.status_code, response.text)
+            raise ValueError(f"{response.status_code} : {response.text}")
 
         data = response.json()
         message = data["choices"][0]["message"]
         total_tokens = data["usage"]["total_tokens"]
-        return {"message": message, "total_tokens": total_tokens}
-
+        return GptResponse(response=message["content"], tokens=total_tokens)
     except Exception as error:
-        logging.error(f"Error calling model {MODEL} at {OPENAI_ENDPOINT}: {error}")
-        check_rethrow_terminal_error(error)
+        logging.error("Error calling model %s at %s: %s", MODEL, OPENAI_ENDPOINT, error)
+        raise error
 
 
-def concat_history(history: List[ChatEntry], entries: Dict[str, Optional[str]]):
-    new_history = history.copy()
+def concat_history(history: List[ChatEntry] | None,
+                   entries:  NewChatEntry) -> List[ChatEntry]:
+    """
+    Add a new chat entry to the history. 
+    """
+    new_history = history[:] if history is not None else []
     new_history.append({"role": "user", "content": entries["user"]})
-
-    if entries.get("bot"):
-        new_history.append({"role": "assistant", "content": entries["bot"]})
+    bot = entries.get("bot", None)
+    if bot is not None:
+        new_history.append({"role": "assistant", "content": bot})
     return new_history
 
 
-async def async_task_notification(ctx: ObjectContext, session: str, msg: str):
-    if MODE == "SLACK":
-        blocks = [
-            {
+def async_task_notification(session: str, msg: str):
+    """
+    Send a notification to the user with the given message.
+    """
+    if MODE != "SLACK":
+        logging.info(" --- NOTIFICATION from session %s --- : %s", session, msg)
+        return
+
+    blocks: List[Dict[Any, Any]] = [
+        {
                 "type": "divider"
             },
             {
@@ -149,6 +121,4 @@ async def async_task_notification(ctx: ObjectContext, session: str, msg: str):
                 "type": "divider"
             }
         ]
-        await slackutils.post_to_slack(session, msg, blocks)
-    else:
-        logging.info(f" --- NOTIFICATION from session {session} --- : {msg}")
+    slackutils.post_to_slack(session, msg, blocks)

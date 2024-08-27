@@ -1,16 +1,25 @@
+"""
+Interprets the commands from the user and generates the appropriate responses.
+"""
 import datetime
 import json
 from typing import Optional, Dict
 
 from restate import Context
 from restate.exceptions import TerminalError
-from restate.serde import Serde
 
 import chatbot.taskmanager as tasks
 from chatbot.utils.types import RunningTask, Action, GptTaskCommand, TaskOpts
 
-async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[str, RunningTask],
+# pylint: disable=line-too-long
+
+async def interpret_command(ctx: Context,
+                            channel_name: str,
+                            active_tasks: Dict[str, RunningTask],
                             command: GptTaskCommand):
+    """
+    Interprets the command and generates the appropriate response.
+    """
     try:
         if command.action == Action.CREATE:
             name = check_action_field(Action.CREATE, command, "task_name")
@@ -30,7 +39,7 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
                 "taskMessage": f"The task '{name}' of type {workflow} has been successfully created in the system: {json.dumps(params, indent=4)}"
             }
 
-        elif command.action == Action.CANCEL:
+        if command.action == Action.CANCEL:
             name = check_action_field(Action.CANCEL, command, "task_name")
             task = active_tasks.get(name)
             if task is None:
@@ -42,10 +51,10 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
             del new_active_tasks[name]
             return {"newActiveTasks": new_active_tasks, "taskMessage": f"Removed task '{name}'"}
 
-        elif command.action == Action.LIST:
+        if command.action == Action.LIST:
             return {"newActiveTasks": {}, "taskMessage": "tasks = " + json.dumps(active_tasks, indent=4)}
 
-        elif command.action == Action.STATUS:
+        if command.action == Action.STATUS:
             name = check_action_field(Action.STATUS, command, "task_name")
             task = active_tasks.get(name)
             if task is None:
@@ -54,12 +63,13 @@ async def interpret_command(ctx: Context, channel_name: str, active_tasks: Dict[
             status = await tasks.get_task_status(ctx, task["workflow"], task["workflow_id"])
             return {"newActiveTasks": {}, "taskMessage": f"{name}.status = {json.dumps(status, indent=4)}"}
 
-        elif command.action == Action.OTHER:
-            return {"newActiveTasks": {}, "taskMessage": "I'm sorry, I don't understand what you want me to do."}
+        if command.action == Action.OTHER:
+            return {"newActiveTasks": {}, "taskMessage": None}
 
     except TerminalError as e:
         raise e
     except Exception as e:
+        # pylint: disable=raise-missing-from
         raise TerminalError(f"Failed to interpret command: {str(e)}\nCommand:\n{command}")
 
 

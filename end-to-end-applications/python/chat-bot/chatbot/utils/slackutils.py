@@ -1,19 +1,29 @@
+"""
+Slack utilities for the chatbot.
+"""
+
 import os
+import sys
+
+from typing import Dict, TypedDict, Optional, Sequence, Any, List
 
 from restate.exceptions import TerminalError
 from slack_sdk import WebClient
 from slack_sdk.signature import SignatureVerifier
 
-from typing import TypedDict, Optional, Sequence
-
-
 class Event(TypedDict):
+    """
+    Event object from Slack API.
+    """
     text: str
     channel: str
     user: str
 
 
 class SlackMessage(TypedDict):
+    """
+    Slack message object.
+    """
     type: str
     event: Event
     event_id: str
@@ -26,12 +36,14 @@ SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 
 if not (SLACK_BOT_USER_ID and SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET):
     print("Missing some SlackBot env variables (SLACK_BOT_USER_ID, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET)")
-    exit(1)
+    sys.exit(1)
 
 slack_client = WebClient(token=SLACK_BOT_TOKEN)
 
+# pylint: disable=missing-function-docstring
+# pylint: disable=raise-missing-from
 
-def filter_irrelevant_messages(msg: SlackMessage, slack_bot_user: str) -> bool:
+def filter_irrelevant_messages(msg: SlackMessage, slack_bot_user: str | None) -> bool:
     # ignore anything that is not an event callback
     if msg["type"] != "event_callback" or not msg.get("event"):
         return True
@@ -70,7 +82,7 @@ def verify_signature(body, headers, signing_secret):
                 "x-slack-request-timestamp": request_timestamp
             }
         )
-    except Exception as e:
+    except Exception:
         raise TerminalError("Event signature verification failed", status_code=400)
 
 
@@ -85,14 +97,14 @@ def send_processing_message(channel: str, text: str):
     return post_to_slack(channel=channel, text=text, blocks=blocks)
 
 
-def post_to_slack(channel: str, text: str, blocks: Sequence[dict]):
+def post_to_slack(channel: str, text: str, blocks: Sequence[Dict] | None):
     slack_response = slack_client.chat_postMessage(channel=channel, text=text, blocks=blocks)
 
     if not slack_response["ok"] or slack_response["error"]:
-        raise Exception(f"Failed to send message to slack: {slack_response['error']}")
+        raise IOError(f"Failed to send message to slack: {slack_response['error']}")
 
     if not slack_response["ts"]:
-        raise Exception(f"Missing message timestamp in response: {slack_response}")
+        raise IOError(f"Missing message timestamp in response: {slack_response}")
 
     return slack_response["ts"]
 
@@ -119,7 +131,7 @@ def send_result_message(channel: str, text: str, quote: str | None, msgTimestamp
 
 
 def send_error_message(channel: str, error_msg: str, quote: str | None, replace_msg_timestamp: str | None):
-    blocks = [
+    blocks: List[Dict[Any, Any]] = [
         {"type": "divider"},
         {
             "type": "section",
@@ -159,7 +171,7 @@ def update_message_in_slack(channel: str, text: str, blocks: Sequence[dict], rep
 
 
 def notification_handler(channel: str, message: str):
-    blocks = [
+    blocks: List[Dict[Any, Any]] = [
         {
             "type": "divider"
         },

@@ -1,3 +1,7 @@
+"""
+Flight Watcher Task
+"""
+
 import logging
 from datetime import timedelta
 from typing import Any
@@ -17,7 +21,7 @@ flight_watcher = Workflow("flight_price_watcher")
 
 @flight_watcher.main()
 async def run(ctx: WorkflowContext, opts: FlightPriceOpts):
-    logging.info(f"Running flight price watcher for: {opts} and with ID {ctx.key()}")
+    logging.info("Running flight price watcher for: %s and with ID %s", opts, ctx.key())
     cancelled = ctx.promise("cancelled")
     attempt = 0
 
@@ -41,7 +45,7 @@ async def cancel(ctx: WorkflowSharedContext):
 
 
 @flight_watcher.handler()
-async def current_status(ctx: WorkflowSharedContext) -> float:
+async def current_status(ctx: WorkflowSharedContext) -> float | None:
     return await ctx.get("last_quote")
 
 
