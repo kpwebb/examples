@@ -124,11 +124,12 @@ async def call_gpt(messages: List[ChatEntry]) -> Dict[str, Union[ChatEntry, int]
 
 
 def concat_history(history: List[ChatEntry], entries: Dict[str, Optional[str]]):
-    chat_history = history or []
-    new_entries = [ChatEntry(role=Role.USER, content=entries["user"])]
+    new_history = history.copy()
+    new_history.append({"role": "user", "content": entries["user"]})
 
     if entries.get("bot"):
-        new_entries.append({"role": Role.ASSISTANT, "content": entries["bot"]})
+        new_history.append({"role": "assistant", "content": entries["bot"]})
+    return new_history
 
 
 async def async_task_notification(ctx: ObjectContext, session: str, msg: str):

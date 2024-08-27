@@ -28,7 +28,7 @@ if not (SLACK_BOT_USER_ID and SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET):
     print("Missing some SlackBot env variables (SLACK_BOT_USER_ID, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET)")
     exit(1)
 
-slack_client = WebClient()
+slack_client = WebClient(token=SLACK_BOT_TOKEN)
 
 
 def filter_irrelevant_messages(msg: SlackMessage, slack_bot_user: str) -> bool:
@@ -115,7 +115,7 @@ def send_result_message(channel: str, text: str, quote: str | None, msgTimestamp
             }
         })
 
-    return update_message_in_slack(channel=channel, text=text, blocks=blocks)
+    return update_message_in_slack(channel=channel, text=text, blocks=blocks, replace_msg_timestamp=msgTimestamp)
 
 
 def send_error_message(channel: str, error_msg: str, quote: str | None, replace_msg_timestamp: str | None):

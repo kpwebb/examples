@@ -1,6 +1,6 @@
 import os
 
-from restate import VirtualObject, Context
+from restate import Service, Context
 
 import logging
 
@@ -21,7 +21,7 @@ SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 #  with all slack specific things, like deduplication, errors, formatting,
 #  message updates, showing the bot's busy status, etc.
 # ----------------------------------------------------------------------------
-slackbot = VirtualObject("slackbot")
+slackbot = Service("slackbot")
 
 
 # This is the handler hit by the webhook. We do minimal stuff here to
