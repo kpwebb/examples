@@ -36,7 +36,7 @@ application {
   if (project.hasProperty("mainClass")) {
     mainClass.set(project.property("mainClass") as String)
   } else {
-    mainClass.set("durable_execution.RoleUpdateService")
+    mainClass.set("durable_execution.SubscriptionService")
   }
 }
 

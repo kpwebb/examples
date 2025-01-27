@@ -1,8 +1,12 @@
 package utils;
 
+import dev.restate.sdk.ObjectContext;
 import dev.restate.sdk.common.TerminalException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Random;
+import java.util.UUID;
 
 public class ExampleStubs {
     private static final Logger logger = LogManager.getLogger(ExampleStubs.class);
@@ -22,7 +26,10 @@ public class ExampleStubs {
     }
 
     public static String createSubscription(String userId, String subscription, String paymentRef) {
-        maybeCrash(0.3);
+//        maybeCrash(0.3);
+//        if(subscription.equals("Disney")){
+//            throw new IllegalStateException("Can't create subscription: Disney is not allowed");
+//        }
         logger.info(">>> Creating subscription {} for user {} with payment reference {}", subscription, userId, paymentRef);
         return "SUCCESS";
     }
@@ -30,10 +37,13 @@ public class ExampleStubs {
     public static String createRecurringPayment(String creditCard, String paymentId) {
         maybeCrash(0.3);
         logger.info(">>> Creating recurring payment {}", paymentId);
-        return "payment-reference";
+        return UUID.randomUUID().toString();
     }
 
     public static void createUserEntry(User user){
+//        if(user.name().equals("Alfred")){
+//            throw new IllegalStateException("Can't create user entry: Alfred is not allowed to sign up");
+//        }
         logger.info(">>> Creating user entry for {}", user.name());
     }
 

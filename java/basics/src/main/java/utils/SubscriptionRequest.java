@@ -1,3 +1,3 @@
 package utils;
 
-public record SubscriptionRequest(String userId, String creditCard, String[] subscriptions){}
+public record SubscriptionRequest(String creditCard, String[] subscriptions){}

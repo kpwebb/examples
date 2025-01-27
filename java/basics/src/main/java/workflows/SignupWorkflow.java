@@ -18,6 +18,8 @@ import dev.restate.sdk.annotation.Workflow;
 import dev.restate.sdk.common.DurablePromiseKey;
 import dev.restate.sdk.common.StateKey;
 import dev.restate.sdk.http.vertx.RestateHttpEndpointBuilder;
+import durable_execution.SubscriptionServiceClient;
+import utils.SignupRequest;
 import utils.User;
 
 import static utils.ExampleStubs.createUserEntry;
@@ -44,16 +46,16 @@ public class SignupWorkflow {
 
     // --- The workflow logic ---
     @Workflow
-    public boolean run(WorkflowContext ctx, User user) {
+    public boolean run(WorkflowContext ctx, SignupRequest req) {
         // workflow ID = user ID; workflow runs once per user
         String userId = ctx.key();
 
         // Durably executed action; write to other system
-        ctx.run(() -> createUserEntry(user));
+        ctx.run("Create user", () -> createUserEntry(req.user()));
 
         // Sent user email with verification link
         String secret = ctx.random().nextUUID().toString();
-        ctx.run(() -> sendEmailWithLink(userId, user, secret));
+        ctx.run("Email link", () -> sendEmailWithLink(userId, req.user(), secret));
 
         // Wait until user clicked email verification link
         // Promise gets resolved or rejected by the other handlers
@@ -62,7 +64,13 @@ public class SignupWorkflow {
                         .awaitable()
                         .await();
 
-        return clickSecret.equals(secret);
+        if(clickSecret.equals(secret)){
+            var result = SubscriptionServiceClient.fromContext(ctx, userId)
+                    .add(req.subscriptionRequest()).await();
+            return true;
+        }
+
+        return false;
     }
 
 
